@@ -40,19 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
         Toast.makeText(getApplicationContext(), "Successfully connected to personal WiFi", Toast.LENGTH_LONG).show();
 
-        //openHue();
-
         finish();
-    }
-
-    private void openHue() {
-        try{
-            Intent intent = new Intent("com.philips.lighting.hue2");
-            this.startActivity(intent);
-        }
-        finally {
-
-        }
     }
 
     private void attemptConnect(String networkSSID, String networkPass) {
@@ -91,5 +79,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return isConnected;
+    }
+
+    public void exitButtonClick(){
+        finish();
     }
 }
