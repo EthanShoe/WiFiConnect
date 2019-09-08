@@ -13,7 +13,9 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
 import android.webkit.ConsoleMessage;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.util.List;
@@ -31,16 +33,55 @@ public class MainActivity extends AppCompatActivity {
         networkSSID = "NETGEAR56";
         networkPass = "vastflute432";
 
+        WifiCheck();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        WifiCheck();
+    }
+
+    public void OpenDoorClick(View v){
+        Toast.makeText(getApplicationContext(), "Sorry, this button doesn't do anything yet.", Toast.LENGTH_LONG).show();
+    }
+
+    private void WifiCheck() {
+        if (!isConnectedTo(networkSSID)){
+            findViewById(R.id.openDoor).setEnabled(false);
+            ConnectToNetwork();
+        }
+        else{
+            SetStatusSymbol(2);
+            findViewById(R.id.openDoor).setEnabled(true);
+        }
+    }
+
+    private void SetStatusSymbol(int status){
+        ImageView statusView = findViewById(R.id.statusView);
+        switch (status){
+            case 0:
+                statusView.setImageResource(R.drawable.wifi_red);
+            case 1:
+                statusView.setImageResource(R.drawable.wifi_yellow);
+            case 2:
+                statusView.setImageResource(R.drawable.wifi_green);
+        }
+    }
+
+    private void ConnectToNetwork() {
         attemptConnect(networkSSID, networkPass);
 
         boolean noConnection = true;
+        SetStatusSymbol(1);
         while (noConnection){
             noConnection = !isConnectedTo(networkSSID);
         }
 
         Toast.makeText(getApplicationContext(), "Successfully connected to personal WiFi", Toast.LENGTH_LONG).show();
-
-        finish();
+        SetStatusSymbol(2);
+        findViewById(R.id.openDoor).setEnabled(true);
     }
 
     private void attemptConnect(String networkSSID, String networkPass) {
@@ -81,7 +122,5 @@ public class MainActivity extends AppCompatActivity {
         return isConnected;
     }
 
-    public void exitButtonClick(){
-        finish();
-    }
+
 }
