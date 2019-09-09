@@ -5,19 +5,21 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.util.Log;
 import android.view.View;
-import android.webkit.ConsoleMessage;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.Console;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -32,8 +34,6 @@ public class MainActivity extends AppCompatActivity {
 
         networkSSID = "NETGEAR56";
         networkPass = "vastflute432";
-
-        WifiCheck();
     }
 
     @Override
@@ -41,6 +41,25 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         WifiCheck();
+
+        final int interval = 5000; // 1 Second
+        Handler handler = new Handler();
+        Runnable runnable = new Runnable(){
+            public void run() {
+                if (!isConnectedTo(networkSSID)){
+                    Toast.makeText(MainActivity.this, "The personal WiFi connection failed.", Toast.LENGTH_LONG).show();
+                    SetStatusSymbol(0);
+                }
+            }
+        };
+        handler.postDelayed(runnable, interval);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        finish();
     }
 
     public void OpenDoorClick(View v){
@@ -49,10 +68,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void WifiCheck() {
         if (!isConnectedTo(networkSSID)){
+            Log.d("STATUS", "WiFi was not connected upon opening app.");
             findViewById(R.id.openDoor).setEnabled(false);
+            SetStatusSymbol(0);
+
             ConnectToNetwork();
         }
         else{
+            Log.d("STATUS", "WiFi was connected upon opening app.");
             SetStatusSymbol(2);
             findViewById(R.id.openDoor).setEnabled(true);
         }
@@ -63,28 +86,44 @@ public class MainActivity extends AppCompatActivity {
         switch (status){
             case 0:
                 statusView.setImageResource(R.drawable.wifi_red);
+                break;
             case 1:
                 statusView.setImageResource(R.drawable.wifi_yellow);
+                break;
             case 2:
                 statusView.setImageResource(R.drawable.wifi_green);
+                break;
         }
     }
 
     private void ConnectToNetwork() {
-        attemptConnect(networkSSID, networkPass);
+        AttemptConnect(networkSSID, networkPass);
 
-        boolean noConnection = true;
+        //final boolean noConnection = true;
         SetStatusSymbol(1);
-        while (noConnection){
-            noConnection = !isConnectedTo(networkSSID);
-        }
 
-        Toast.makeText(getApplicationContext(), "Successfully connected to personal WiFi", Toast.LENGTH_LONG).show();
-        SetStatusSymbol(2);
-        findViewById(R.id.openDoor).setEnabled(true);
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                while (!isConnectedTo(networkSSID)){
+
+                }
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getApplicationContext(), "Successfully connected to personal WiFi", Toast.LENGTH_LONG).show();
+                        Log.d("STATUS", "WiFi was successfully connected.");
+                        SetStatusSymbol(2);
+                        findViewById(R.id.openDoor).setEnabled(true);
+                    }
+                });
+
+            }
+        });
     }
 
-    private void attemptConnect(String networkSSID, String networkPass) {
+    private void AttemptConnect(String networkSSID, String networkPass) {
         WifiConfiguration conf = new WifiConfiguration();
         conf.SSID = "\"" + networkSSID + "\"";   // Please note the quotes. String should contain ssid in quotes
 
