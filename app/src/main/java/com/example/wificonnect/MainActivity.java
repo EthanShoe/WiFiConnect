@@ -5,7 +5,9 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -16,10 +18,20 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.Console;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -42,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
 
         WifiCheck();
 
-        final int interval = 5000; // 1 Second
+        final int interval = 5000; // 5 Seconds
         Handler handler = new Handler();
         Runnable runnable = new Runnable(){
             public void run() {
@@ -63,7 +75,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void OpenDoorClick(View v){
-        Toast.makeText(getApplicationContext(), "Sorry, this button doesn't do anything yet.", Toast.LENGTH_LONG).show();
+        try{
+            URL url = new URL("http://192.168.1.10:8080/");
+            WebView myWebView = (WebView) findViewById(R.id.webView);
+            myWebView.getSettings().setJavaScriptEnabled(true);
+            myWebView.setWebViewClient(new WebViewClient());
+            myWebView.loadUrl("http://192.168.1.10:8080");
+
+
+
+            /*HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("GET");
+            urlConnection.connect();
+
+            urlConnection.getInputStream();
+
+
+
+            urlConnection.disconnect();*/
+
+
+            /*client.setRequestMethod("POST");
+            client.setRequestProperty("Key", "Value");
+            client.setDoOutput(true);
+
+            OutputStream outputPost = new BufferedOutputStream(client.getOutputStream());
+            writeStream(outputPost);
+            outputPost.flush();
+            outputPost.close();*/
+
+        } catch (MalformedURLException error){
+            Toast.makeText(getApplicationContext(), error.toString(), Toast.LENGTH_LONG);
+        } catch (java.io.IOException error){
+            Toast.makeText(getApplicationContext(), error.toString(), Toast.LENGTH_LONG);
+        }
+
     }
 
     private void WifiCheck() {
@@ -160,6 +206,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return isConnected;
     }
-
 
 }

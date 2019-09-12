@@ -13,6 +13,13 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="invisible" />
+
         <ImageView
             android:id="@+id/statusView"
             android:layout_width="match_parent"
