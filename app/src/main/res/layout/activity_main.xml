@@ -39,10 +39,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_margin="20dp"
-            android:background="@drawable/round_button"
+            android:background="@drawable/button_disconnected"
             android:onClick="OpenDoorClick"
             android:text="Open Door"
-            android:textSize="36sp"
+            android:textSize="80sp"
             app:layout_constraintDimensionRatio="1:1" />
     </LinearLayout>
 

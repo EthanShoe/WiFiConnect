@@ -20,15 +20,11 @@ import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.Toast;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.Console;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -52,9 +48,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        SetButtonMode(0);
+
         WifiCheck();
 
-        final int interval = 5000; // 5 Seconds
+        final int interval = 7000; //7 Seconds
         Handler handler = new Handler();
         Runnable runnable = new Runnable(){
             public void run() {
@@ -75,47 +73,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void OpenDoorClick(View v){
+        SetButtonMode(1);
         try{
             URL url = new URL("http://192.168.1.10:8080/");
             WebView myWebView = (WebView) findViewById(R.id.webView);
-            myWebView.getSettings().setJavaScriptEnabled(true);
             myWebView.setWebViewClient(new WebViewClient());
             myWebView.loadUrl("http://192.168.1.10:8080");
 
-
-
-            /*HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.setRequestMethod("GET");
-            urlConnection.connect();
-
-            urlConnection.getInputStream();
-
-
-
-            urlConnection.disconnect();*/
-
-
-            /*client.setRequestMethod("POST");
-            client.setRequestProperty("Key", "Value");
-            client.setDoOutput(true);
-
-            OutputStream outputPost = new BufferedOutputStream(client.getOutputStream());
-            writeStream(outputPost);
-            outputPost.flush();
-            outputPost.close();*/
-
         } catch (MalformedURLException error){
-            Toast.makeText(getApplicationContext(), error.toString(), Toast.LENGTH_LONG);
-        } catch (java.io.IOException error){
-            Toast.makeText(getApplicationContext(), error.toString(), Toast.LENGTH_LONG);
+            Log.d("STATUS", "MalformedURLException: " + error.toString());
         }
-
     }
 
     private void WifiCheck() {
         if (!isConnectedTo(networkSSID)){
             Log.d("STATUS", "WiFi was not connected upon opening app.");
-            findViewById(R.id.openDoor).setEnabled(false);
+            SetButtonMode(0);
             SetStatusSymbol(0);
 
             ConnectToNetwork();
@@ -123,22 +96,7 @@ public class MainActivity extends AppCompatActivity {
         else{
             Log.d("STATUS", "WiFi was connected upon opening app.");
             SetStatusSymbol(2);
-            findViewById(R.id.openDoor).setEnabled(true);
-        }
-    }
-
-    private void SetStatusSymbol(int status){
-        ImageView statusView = findViewById(R.id.statusView);
-        switch (status){
-            case 0:
-                statusView.setImageResource(R.drawable.wifi_red);
-                break;
-            case 1:
-                statusView.setImageResource(R.drawable.wifi_yellow);
-                break;
-            case 2:
-                statusView.setImageResource(R.drawable.wifi_green);
-                break;
+            SetButtonMode(2);
         }
     }
 
@@ -161,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), "Successfully connected to personal WiFi", Toast.LENGTH_LONG).show();
                         Log.d("STATUS", "WiFi was successfully connected.");
                         SetStatusSymbol(2);
-                        findViewById(R.id.openDoor).setEnabled(true);
+                        SetButtonMode(2);
                     }
                 });
 
@@ -207,4 +165,47 @@ public class MainActivity extends AppCompatActivity {
         return isConnected;
     }
 
+    private void SetStatusSymbol(int status){
+        ImageView statusView = findViewById(R.id.statusView);
+        switch (status){
+            case 0:
+                statusView.setImageResource(R.drawable.wifi_red);
+                break;
+            case 1:
+                statusView.setImageResource(R.drawable.wifi_yellow);
+                break;
+            case 2:
+                statusView.setImageResource(R.drawable.wifi_green);
+                break;
+        }
+    }
+
+    private void SetButtonMode(int status){
+        Button button = findViewById(R.id.openDoor);
+
+        switch (status){
+            case 0: //wifi not connected - disabled
+                button.setBackgroundResource(R.drawable.button_disconnected);
+                button.setEnabled(false);
+                break;
+            case 1: //button pressed - wait
+                button.setBackgroundResource(R.drawable.button_wait);
+                button.setEnabled(false);
+
+                final int interval = 7000; //7 Seconds
+                Handler handler = new Handler();
+                Runnable runnable = new Runnable(){
+                    public void run() {
+                        SetButtonMode(2);
+                    }
+                };
+                handler.postDelayed(runnable, interval);
+
+                break;
+            case 2: //button ready
+                button.setBackgroundResource(R.drawable.button_ready);
+                button.setEnabled(true);
+                break;
+        }
+    }
 }
