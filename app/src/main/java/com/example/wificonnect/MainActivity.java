@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
                 button.setBackgroundResource(R.drawable.button_wait);
                 button.setEnabled(false);
 
-                final int interval = 7000; //7 Seconds
+                final int interval = 11000; //11 Seconds
                 Handler handler = new Handler();
                 Runnable runnable = new Runnable(){
                     public void run() {
