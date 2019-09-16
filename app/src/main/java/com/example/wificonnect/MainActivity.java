@@ -34,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
 
     String networkSSID;
     String networkPass;
+    int statusSymbol;
+    int buttonMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +44,28 @@ public class MainActivity extends AppCompatActivity {
 
         networkSSID = "NETGEAR56";
         networkPass = "vastflute432";
+
+        findViewById(R.id.openDoor).setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                if (buttonMode == 1){
+                    OpenDoor();
+                }
+                return true;
+            }
+        });
+
+        findViewById(R.id.statusView).setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                if (statusSymbol == 0){
+                    Toast.makeText(getApplicationContext(), "Manual reconnected initiated.", Toast.LENGTH_LONG).show();
+                    WifiCheck();
+                }
+
+                return false;
+            }
+        });
     }
 
     @Override
@@ -51,18 +75,6 @@ public class MainActivity extends AppCompatActivity {
         SetButtonMode(0);
 
         WifiCheck();
-
-        final int interval = 7000; //7 Seconds
-        Handler handler = new Handler();
-        Runnable runnable = new Runnable(){
-            public void run() {
-                if (!isConnectedTo(networkSSID)){
-                    Toast.makeText(MainActivity.this, "The personal WiFi connection failed.", Toast.LENGTH_LONG).show();
-                    SetStatusSymbol(0);
-                }
-            }
-        };
-        handler.postDelayed(runnable, interval);
     }
 
     @Override
@@ -73,13 +85,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void OpenDoorClick(View v){
+        if (buttonMode == 1){
+            return;
+        }
+        OpenDoor();
+    }
+
+    private void OpenDoor() {
         SetButtonMode(1);
         try{
             URL url = new URL("http://192.168.1.10:8080/");
             WebView myWebView = (WebView) findViewById(R.id.webView);
             myWebView.setWebViewClient(new WebViewClient());
             myWebView.loadUrl("http://192.168.1.10:8080");
-
         } catch (MalformedURLException error){
             Log.d("STATUS", "MalformedURLException: " + error.toString());
         }
@@ -87,14 +105,26 @@ public class MainActivity extends AppCompatActivity {
 
     private void WifiCheck() {
         if (!isConnectedTo(networkSSID)){
-            Log.d("STATUS", "WiFi was not connected upon opening app.");
+            Log.d("STATUS", "WiFi was not connected.");
             SetButtonMode(0);
             SetStatusSymbol(0);
 
             ConnectToNetwork();
+
+            final int interval = 7000; //7 Seconds
+            Handler handler = new Handler();
+            Runnable runnable = new Runnable(){
+                public void run() {
+                    if (!isConnectedTo(networkSSID)){
+                        Toast.makeText(MainActivity.this, "The personal WiFi connection failed.", Toast.LENGTH_LONG).show();
+                        SetStatusSymbol(0);
+                    }
+                }
+            };
+            handler.postDelayed(runnable, interval);
         }
         else{
-            Log.d("STATUS", "WiFi was connected upon opening app.");
+            Log.d("STATUS", "WiFi is already connected.");
             SetStatusSymbol(2);
             SetButtonMode(2);
         }
@@ -170,12 +200,15 @@ public class MainActivity extends AppCompatActivity {
         switch (status){
             case 0:
                 statusView.setImageResource(R.drawable.wifi_red);
+                statusSymbol = 0;
                 break;
             case 1:
                 statusView.setImageResource(R.drawable.wifi_yellow);
+                statusSymbol = 1;
                 break;
             case 2:
                 statusView.setImageResource(R.drawable.wifi_green);
+                statusSymbol = 2;
                 break;
         }
     }
@@ -187,10 +220,12 @@ public class MainActivity extends AppCompatActivity {
             case 0: //wifi not connected - disabled
                 button.setBackgroundResource(R.drawable.button_disconnected);
                 button.setEnabled(false);
+                buttonMode = 0;
                 break;
             case 1: //button pressed - wait
                 button.setBackgroundResource(R.drawable.button_wait);
-                button.setEnabled(false);
+                button.setEnabled(true);
+                buttonMode = 1;
 
                 final int interval = 11000; //11 Seconds
                 Handler handler = new Handler();
@@ -205,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
             case 2: //button ready
                 button.setBackgroundResource(R.drawable.button_ready);
                 button.setEnabled(true);
+                buttonMode = 2;
                 break;
         }
     }

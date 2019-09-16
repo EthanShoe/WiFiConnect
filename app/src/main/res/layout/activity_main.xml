@@ -40,6 +40,7 @@
             android:layout_height="match_parent"
             android:layout_margin="20dp"
             android:background="@drawable/button_disconnected"
+            android:longClickable="true"
             android:onClick="OpenDoorClick"
             android:text="Open Door"
             android:textSize="80sp"
