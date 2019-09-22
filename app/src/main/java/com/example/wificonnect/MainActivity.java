@@ -1,33 +1,32 @@
 package com.example.wificonnect;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Switch;
 import android.widget.Toast;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,14 +35,20 @@ public class MainActivity extends AppCompatActivity {
     String networkPass;
     int statusSymbol;
     int buttonMode;
+    boolean autoOpenChecked;
+    boolean autoReconnectChecked;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //set initial values
         networkSSID = "NETGEAR56";
         networkPass = "vastflute432";
+        SharedPreferences sharedPreferences = getSharedPreferences("StoredValues", MODE_PRIVATE);
+        autoOpenChecked = sharedPreferences.getBoolean("autoOpenChecked", true);
+        autoReconnectChecked = sharedPreferences.getBoolean("autoReconnectChecked", true);
 
         findViewById(R.id.openDoor).setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -81,9 +86,57 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        finish();
+        if (statusSymbol != 2) //if the process for connecting to wifi is still running
+            finish(); //end the app
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+
+        menu.findItem(R.id.autoOpen).setChecked(autoOpenChecked);
+        menu.findItem(R.id.autoRetryConnect).setChecked(autoReconnectChecked);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.autoOpen:
+                if (item.isChecked()){
+                    item.setChecked(false);
+                    autoOpenChecked = false;
+                }
+                else{
+                    item.setChecked(true);
+                    autoOpenChecked = true;
+                }
+                break;
+
+            case R.id.autoRetryConnect:
+                if (item.isChecked()){
+                    item.setChecked(false);
+                    autoReconnectChecked = false;
+                }
+                else{
+                    item.setChecked(true);
+                    autoReconnectChecked = true;
+                }
+                break;
+        }
+
+        SharedPreferences sharedPreferences = getSharedPreferences("StoredValues", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean("autoOpenChecked", autoOpenChecked);
+        editor.putBoolean("autoReconnectChecked", autoReconnectChecked);
+        editor.apply();
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    //when the open door button is clicked
     public void OpenDoorClick(View v){
         if (buttonMode == 1){
             return;
@@ -91,18 +144,16 @@ public class MainActivity extends AppCompatActivity {
         OpenDoor();
     }
 
+    //method to open the door
     private void OpenDoor() {
         SetButtonMode(1);
-        try{
-            URL url = new URL("http://192.168.1.10:8080/");
-            WebView myWebView = (WebView) findViewById(R.id.webView);
-            myWebView.setWebViewClient(new WebViewClient());
-            myWebView.loadUrl("http://192.168.1.10:8080");
-        } catch (MalformedURLException error){
-            Log.d("STATUS", "MalformedURLException: " + error.toString());
-        }
+
+        WebView myWebView = findViewById(R.id.webView);
+        myWebView.setWebViewClient(new WebViewClient());
+        myWebView.loadUrl("http://192.168.1.9:8080");
     }
 
+    //checks whether or not the wifi is connected, and tries to connect if not connected
     private void WifiCheck() {
         if (!isConnectedTo(networkSSID)){
             Log.d("STATUS", "WiFi was not connected.");
@@ -111,13 +162,16 @@ public class MainActivity extends AppCompatActivity {
 
             ConnectToNetwork();
 
-            final int interval = 7000; //7 Seconds
+            final int interval = 10000; //10 Seconds
             Handler handler = new Handler();
             Runnable runnable = new Runnable(){
                 public void run() {
                     if (!isConnectedTo(networkSSID)){
                         Toast.makeText(MainActivity.this, "The personal WiFi connection failed.", Toast.LENGTH_LONG).show();
                         SetStatusSymbol(0);
+                        if (autoReconnectChecked){
+                            WifiCheck();
+                        }
                     }
                 }
             };
@@ -130,6 +184,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //starts connection attempt and checks for if and when successful
     private void ConnectToNetwork() {
         AttemptConnect(networkSSID, networkPass);
 
@@ -149,7 +204,20 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(), "Successfully connected to personal WiFi", Toast.LENGTH_LONG).show();
                         Log.d("STATUS", "WiFi was successfully connected.");
                         SetStatusSymbol(2);
-                        SetButtonMode(2);
+
+                        final int interval = 1000; //1 Second
+                        Handler handler = new Handler();
+                        Runnable runnable = new Runnable(){
+                            public void run() {
+                                SetButtonMode(2);
+
+                                //check if checkbox is checked and run OpenDoor();
+                                if (autoOpenChecked){
+                                    OpenDoor();
+                                }
+                            }
+                        };
+                        handler.postDelayed(runnable, interval);
                     }
                 });
 
@@ -157,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //method that connects to the network
     private void AttemptConnect(String networkSSID, String networkPass) {
         WifiConfiguration conf = new WifiConfiguration();
         conf.SSID = "\"" + networkSSID + "\"";   // Please note the quotes. String should contain ssid in quotes
@@ -178,6 +247,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //checks whether the phone is connected to specified SSID
     public boolean isConnectedTo(String ssid) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             //Request permission from user
@@ -195,6 +265,7 @@ public class MainActivity extends AppCompatActivity {
         return isConnected;
     }
 
+    //sets the wifi symbol
     private void SetStatusSymbol(int status){
         ImageView statusView = findViewById(R.id.statusView);
         switch (status){
@@ -213,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //sets the button mode
     private void SetButtonMode(int status){
         Button button = findViewById(R.id.openDoor);
 

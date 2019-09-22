@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:spp="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/autoOpen"
+        android:checkable="true"
+        android:checked="true"
+        android:title="Auto open on connect"
+        android:titleCondensed="Options"
+        spp:showAsAction="never" />
+
+    <item
+        android:id="@+id/autoRetryConnect"
+        android:checkable="true"
+        android:checked="true"
+        android:title="Auto retry WiFi on failed connection"
+        android:titleCondensed="Options"
+        spp:showAsAction="never" />
+
+</menu>
