@@ -25,8 +25,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -150,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 
         WebView myWebView = findViewById(R.id.webView);
         myWebView.setWebViewClient(new WebViewClient());
-        myWebView.loadUrl("http://192.168.1.9:8080");
+        myWebView.loadUrl("http://192.168.1.12:8080");
     }
 
     //checks whether or not the wifi is connected, and tries to connect if not connected
@@ -229,7 +227,6 @@ public class MainActivity extends AppCompatActivity {
     private void AttemptConnect(String networkSSID, String networkPass) {
         WifiConfiguration conf = new WifiConfiguration();
         conf.SSID = "\"" + networkSSID + "\"";   // Please note the quotes. String should contain ssid in quotes
-
         conf.preSharedKey = "\""+ networkPass +"\"";
 
         WifiManager wifiManager = (WifiManager)getSystemService(Context.WIFI_SERVICE);
@@ -299,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
                 button.setEnabled(true);
                 buttonMode = 1;
 
-                final int interval = 11000; //11 Seconds
+                final int interval = 10000; //10 Seconds
                 Handler handler = new Handler();
                 Runnable runnable = new Runnable(){
                     public void run() {
