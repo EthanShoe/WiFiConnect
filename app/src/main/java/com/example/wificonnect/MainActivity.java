@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //set initial values
-        networkSSID = "NETGEAR56";
+        networkSSID = "NETGEAR56"; 
         networkPass = "vastflute432";
         SharedPreferences sharedPreferences = getSharedPreferences("StoredValues", MODE_PRIVATE);
         autoOpenChecked = sharedPreferences.getBoolean("autoOpenChecked", true);
@@ -84,8 +84,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        if (statusSymbol != 2) //if the process for connecting to wifi is still running
-            finish(); //end the app
+        if (statusSymbol != 2){ //if the process for connecting to wifi is still running
+            this.finishAffinity();
+            System.exit(0);//end the app
+        }
     }
 
     @Override
@@ -148,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
 
         WebView myWebView = findViewById(R.id.webView);
         myWebView.setWebViewClient(new WebViewClient());
-        myWebView.loadUrl("http://192.168.1.12:8080");
+        myWebView.loadUrl("http://192.168.1.2:8080/open");
     }
 
     //checks whether or not the wifi is connected, and tries to connect if not connected
