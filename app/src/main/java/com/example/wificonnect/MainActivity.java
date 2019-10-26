@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
     String networkSSID;
     String networkPass;
+    String lastIPNum;
     int statusSymbol;
     int buttonMode;
     boolean autoOpenChecked;
@@ -42,9 +43,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //set initial values
-        networkSSID = "NETGEAR56"; 
+        networkSSID = "NETGEAR56";
         networkPass = "vastflute432";
         SharedPreferences sharedPreferences = getSharedPreferences("StoredValues", MODE_PRIVATE);
+        lastIPNum = sharedPreferences.getString("lastIPNum", "2");
         autoOpenChecked = sharedPreferences.getBoolean("autoOpenChecked", true);
         autoReconnectChecked = sharedPreferences.getBoolean("autoReconnectChecked", true);
 
@@ -84,10 +86,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        if (statusSymbol != 2){ //if the process for connecting to wifi is still running
-            this.finishAffinity();
-            System.exit(0);//end the app
-        }
+        final int interval = 10000; //10 Seconds
+        Handler handler = new Handler();
+        Runnable runnable = new Runnable(){
+            public void run() {
+                if (statusSymbol != 2){ //if the process for connecting to wifi is still running
+                    //getCallingActivity().finishAffinity();
+                    System.exit(0); //end the app
+                }
+            }
+        };
+        handler.postDelayed(runnable, interval);
     }
 
     @Override
@@ -95,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu, menu);
 
+        menu.findItem(R.id.findIP);
         menu.findItem(R.id.autoOpen).setChecked(autoOpenChecked);
         menu.findItem(R.id.autoRetryConnect).setChecked(autoReconnectChecked);
 
@@ -104,6 +114,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
+            case R.id.findIP:
+                CycleIP();
+                break;
             case R.id.autoOpen:
                 if (item.isChecked()){
                     item.setChecked(false);
@@ -138,6 +151,8 @@ public class MainActivity extends AppCompatActivity {
 
     //when the open door button is clicked
     public void OpenDoorClick(View v){
+        
+
         if (buttonMode == 1){
             return;
         }
@@ -314,5 +329,9 @@ public class MainActivity extends AppCompatActivity {
                 buttonMode = 2;
                 break;
         }
+    }
+
+    public void CycleIP(){
+
     }
 }

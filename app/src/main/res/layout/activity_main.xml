@@ -55,19 +55,22 @@
                     android:id="@+id/status0"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Away" />
+                    android:text="Away"
+                    android:textSize="24sp" />
 
                 <RadioButton
                     android:id="@+id/status1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="In dorm" />
+                    android:text="In dorm"
+                    android:textSize="24sp" />
 
                 <RadioButton
                     android:id="@+id/status2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Sleeping" />
+                    android:text="Sleeping"
+                    android:textSize="24sp" />
             </RadioGroup>
         </LinearLayout>
 

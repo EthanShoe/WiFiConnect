@@ -18,4 +18,11 @@
         android:titleCondensed="Options"
         spp:showAsAction="never" />
 
+    <item
+        android:id="@+id/findIP"
+        android:title="No IP available"
+        android:titleCondensed="Options"
+        spp:showAsAction="never" />
+
+
 </menu>
