@@ -14,6 +14,8 @@ import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -23,19 +25,46 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     String networkSSID;
     String networkPass;
+    String IPAddress;
+    String userID;
     String lastIPNum;
+    String roommateStatusString;
     int statusSymbol;
     int buttonMode;
+    int currentUserID;
+    int roommateUserID;
     boolean autoOpenChecked;
     boolean autoReconnectChecked;
+    User[] userArray;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +75,9 @@ public class MainActivity extends AppCompatActivity {
         networkSSID = "NETGEAR56";
         networkPass = "vastflute432";
         SharedPreferences sharedPreferences = getSharedPreferences("StoredValues", MODE_PRIVATE);
+        userID = sharedPreferences.getString("userID", "1");
         lastIPNum = sharedPreferences.getString("lastIPNum", "2");
+        IPAddress = String.format("http://192.168.1.%s:8080/", lastIPNum);
         autoOpenChecked = sharedPreferences.getBoolean("autoOpenChecked", true);
         autoReconnectChecked = sharedPreferences.getBoolean("autoReconnectChecked", true);
 
@@ -71,6 +102,96 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
+
+        RadioGroup radioGroup = findViewById(R.id.statusSelection);
+        radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup radioGroup, int i) {
+                int radioButtonID = radioGroup.getCheckedRadioButtonId();
+                View radioButton = radioGroup.findViewById(radioButtonID);
+                int buttonIndex = radioGroup.indexOfChild(radioButton);
+
+                final int selectedStatus = buttonIndex - 1;
+
+                    AsyncTask.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try{
+                                /*URL url = new URL(IPAddress + "api/users/" + currentUserID + "/");
+                                HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+                                httpCon.setRequestMethod("PUT");
+                                httpCon.setDoOutput(true);
+                                httpCon.connect();
+                                OutputStreamWriter out = new OutputStreamWriter(httpCon.getOutputStream());
+                                String test = String.format("{'status':%s}", selectedStatus);
+                                out.write(test);
+                                out.close();*/
+
+                                URL url = new URL(IPAddress + "api/users/" + currentUserID + "/");
+                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                                connection.setRequestMethod("PUT");
+                                connection.setDoOutput(true);
+                                connection.setRequestProperty("Content-Type", "application/json");
+                                connection.connect();
+
+                                OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+                                String test = String.format("{'status':%s}", selectedStatus);
+                                out.write(test);
+                                out.flush();
+                                out.close();
+
+                                /*URL url = new URL("http://www.example.com/resource");
+                                HttpClient client = new DefaultHttpClient();
+                                HttpPut put= new HttpPut(url);
+
+                                List<NameValuePair> pairs = new ArrayList<NameValuePair>();
+                                pairs.add(new BasicNameValuePair("key1", "value1"));
+                                pairs.add(new BasicNameValuePair("key2", "value2"));
+                                put.setEntity(new UrlEncodedFormEntity(pairs));
+
+                                HttpResponse response = client.execute(put);*/
+
+
+                                /*OkHttpClient client = new OkHttpClient();
+
+                                RequestBody formBody = new FormBody.Builder()
+                                        .add("message", String.format("{'status':%s}", selectedStatus))
+                                        .build();
+                                Request request = new Request.Builder()
+                                        .url(IPAddress + "api/users/" + currentUserID + "/")
+                                        .post(formBody)
+                                        .build();
+
+                                try {
+                                    Response response = client.newCall(request).execute();
+
+                                    // Do something with the response.
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }*/
+
+                                /*MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+                                String content = String.format("{'status':%s}", selectedStatus);
+                                RequestBody body = RequestBody.create(JSON, content);
+
+                                OkHttpClient client = new OkHttpClient();
+
+                                Request request = new Request.Builder()
+                                        .url(IPAddress + "api/users/" + currentUserID + "/")
+                                        .addHeader("Content-Type", "application/json")
+                                        .put(body) //PUT
+                                        .build();
+
+                                client.newCall(request).execute();*/
+
+                            } catch (IOException IO){
+
+                            }
+                        }
+                    });
+
+            }
+        });
     }
 
     @Override
@@ -78,6 +199,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         SetButtonMode(0);
+        SetRoommateStatus(-1);
 
         WifiCheck();
     }
@@ -91,7 +213,6 @@ public class MainActivity extends AppCompatActivity {
         Runnable runnable = new Runnable(){
             public void run() {
                 if (statusSymbol != 2){ //if the process for connecting to wifi is still running
-                    //getCallingActivity().finishAffinity();
                     System.exit(0); //end the app
                 }
             }
@@ -104,7 +225,14 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu, menu);
 
-        menu.findItem(R.id.findIP);
+        menu.findItem(R.id.currentUser).setTitle(String.format("Current User: %s", userID));
+        currentUserID = Integer.parseInt(userID);
+        if(currentUserID == 1){
+            roommateUserID = 2;
+        } else{
+            roommateUserID = 1;
+        }
+        menu.findItem(R.id.findIP).setTitle(IPAddress);
         menu.findItem(R.id.autoOpen).setChecked(autoOpenChecked);
         menu.findItem(R.id.autoRetryConnect).setChecked(autoReconnectChecked);
 
@@ -114,9 +242,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()){
+            case R.id.currentUser:
+                if(userID.equals("1")){
+                    userID = "2";
+                } else{
+                    userID = "1";
+                }
+                item.setTitle("Current User: " + userID);
+                Toast.makeText(this, "Please restart the app", Toast.LENGTH_LONG).show();
+                break;
+
             case R.id.findIP:
                 CycleIP();
                 break;
+
             case R.id.autoOpen:
                 if (item.isChecked()){
                     item.setChecked(false);
@@ -142,6 +281,7 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences sharedPreferences = getSharedPreferences("StoredValues", MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("userID", userID);
         editor.putBoolean("autoOpenChecked", autoOpenChecked);
         editor.putBoolean("autoReconnectChecked", autoReconnectChecked);
         editor.apply();
@@ -149,14 +289,21 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    //region Door Stuff
+
     //when the open door button is clicked
     public void OpenDoorClick(View v){
-        
-
         if (buttonMode == 1){
             return;
         }
         OpenDoor();
+        //set status to home
+        try{
+            RadioGroup radioGroup = findViewById(R.id.statusSelection);
+            ((RadioButton)radioGroup.getChildAt(2)).setChecked(true);
+        } finally {
+            Toast.makeText(this, "Couldn't update status", Toast.LENGTH_LONG).show();
+        }
     }
 
     //method to open the door
@@ -165,8 +312,12 @@ public class MainActivity extends AppCompatActivity {
 
         WebView myWebView = findViewById(R.id.webView);
         myWebView.setWebViewClient(new WebViewClient());
-        myWebView.loadUrl("http://192.168.1.2:8080/open");
+        myWebView.loadUrl(IPAddress + "open");
     }
+
+    //endregion
+
+    //region WiFi Network Stuff
 
     //checks whether or not the wifi is connected, and tries to connect if not connected
     private void WifiCheck() {
@@ -196,6 +347,8 @@ public class MainActivity extends AppCompatActivity {
             Log.d("STATUS", "WiFi is already connected.");
             SetStatusSymbol(2);
             SetButtonMode(2);
+
+            GetRoommateStatuses();
         }
     }
 
@@ -224,7 +377,9 @@ public class MainActivity extends AppCompatActivity {
                         Handler handler = new Handler();
                         Runnable runnable = new Runnable(){
                             public void run() {
+                                //set button mode and contact server
                                 SetButtonMode(2);
+                                GetRoommateStatuses();
 
                                 //check if checkbox is checked and run OpenDoor();
                                 if (autoOpenChecked){
@@ -279,6 +434,8 @@ public class MainActivity extends AppCompatActivity {
         return isConnected;
     }
 
+    //endregion
+
     //sets the wifi symbol
     private void SetStatusSymbol(int status){
         ImageView statusView = findViewById(R.id.statusView);
@@ -331,7 +488,140 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //searches through IP addresses until it finds server
     public void CycleIP(){
 
     }
+
+    //region Status functions
+
+    //gets, parses, and uses retrieved statuses
+    public void GetRoommateStatuses(){
+
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    String inputLine;
+
+                    //Create a URL object holding our url
+                    URL url = new URL(IPAddress + "api/users/");
+
+                    //Create a connection
+                    HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+
+                    //Set methods and timeouts
+                    connection.setRequestMethod("GET");
+                    connection.setReadTimeout(5000);
+                    connection.setConnectTimeout(5000);
+                    connection.connect();
+
+                    //Create a new InputStreamReader
+                    InputStreamReader streamReader = new InputStreamReader(connection.getInputStream());
+
+                    //Create a new buffered reader and String Builder
+                    BufferedReader reader = new BufferedReader(streamReader);
+                    StringBuilder stringBuilder = new StringBuilder();
+
+                    //Check if the line we are reading is not null
+                    while((inputLine = reader.readLine()) != null){
+                        stringBuilder.append(inputLine);
+                    }
+
+                    //Close our InputStream and Buffered reader
+                    reader.close();
+                    streamReader.close();
+
+                    // convert string to user object
+                    Gson gson = new Gson();
+                    final User[] userArray = gson.fromJson(stringBuilder.toString(), User[].class);
+
+                    if (roommateUserID == 0) { //throw exception if no roommate status
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                //Toast.makeText(getApplicationContext(), "First server attempt failed", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        throw new IOException("Didn't retrieve information from server");
+                    }
+
+                    //enable radio buttons
+                    SetRadioButtonsEnabled(true);
+
+                    //set both statuses from server
+                    SetRoommateStatus(userArray[roommateUserID - 1].status);
+                    if(userArray[roommateUserID - 1].status == 2){
+                        Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                        v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+                    }
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            RadioGroup radioGroup = findViewById(R.id.statusSelection);
+                            ((RadioButton)radioGroup.getChildAt(userArray[currentUserID - 1].status + 1)).setChecked(true);
+                        }
+                    });
+
+                } catch (IOException IO){
+                    roommateStatusString = "failedConnection";
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Runnable runnable = new Runnable(){
+                                public void run() {
+                                    GetRoommateStatuses();
+                                }
+                            };
+                            Handler handler = new Handler();
+                            handler.postDelayed(runnable, 1000);
+                        }
+                    });
+                }
+            }
+        });
+
+    }
+
+    //sets status symbol for roommate
+    public void SetRoommateStatus(final int status){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ImageView statusView = findViewById(R.id.roommateStatus);
+                switch (status){
+                    case -1:
+                        statusView.setImageResource(R.drawable.server_disconect);
+                        SetRadioButtonsEnabled(false);
+                        break;
+                    case 0:
+                        statusView.setImageResource(R.drawable.roommate_away);
+                        break;
+                    case 1:
+                        statusView.setImageResource(R.drawable.roommate_home);
+                        break;
+                    case 2:
+                        statusView.setImageResource(R.drawable.roommate_sleeping);
+                        break;
+                }
+            }
+        });
+    }
+
+    //enables and disables the radio buttons
+    public void SetRadioButtonsEnabled(final boolean value){
+        runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+            RadioGroup radioGroup = findViewById(R.id.statusSelection);
+            for (int i = 0; i < (radioGroup.getChildCount()); i++) {
+                (radioGroup.getChildAt(i)).setEnabled(value);
+            }
+        }
+    });
+    }
+
+    //endregion
 }

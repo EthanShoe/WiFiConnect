@@ -3,6 +3,18 @@
     xmlns:spp="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/currentUser"
+        android:title="Current User: "
+        android:titleCondensed="Options"
+        spp:showAsAction="never" />
+
+    <item
+        android:id="@+id/findIP"
+        android:title="No IP available"
+        android:titleCondensed="Options"
+        spp:showAsAction="never" />
+
+    <item
         android:id="@+id/autoOpen"
         android:checkable="true"
         android:checked="true"
@@ -15,12 +27,6 @@
         android:checkable="true"
         android:checked="true"
         android:title="Auto retry WiFi on failed connection"
-        android:titleCondensed="Options"
-        spp:showAsAction="never" />
-
-    <item
-        android:id="@+id/findIP"
-        android:title="No IP available"
         android:titleCondensed="Options"
         spp:showAsAction="never" />
 
