@@ -373,6 +373,70 @@ public class MainActivity extends AppCompatActivity {
         return isConnected;
     }
 
+    //searches through IP addresses until it finds server
+    public void CycleIP(){
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                boolean foundIP = false;
+                for (int ipNumber = 0; ipNumber < 15; ipNumber++){
+                    IPAddress = String.format("http://192.168.1.%s:8080/", ipNumber);
+
+                    try{
+                        String inputLine;
+                        URL url = new URL(IPAddress + "api/users/");
+
+                        //Create a connection
+                        HttpURLConnection connection = (HttpURLConnection)url.openConnection();
+
+                        //Set methods and timeouts
+                        connection.setRequestMethod("GET");
+                        connection.setReadTimeout(5000);
+                        connection.setConnectTimeout(5000);
+                        connection.connect();
+
+                        //Create a new InputStreamReader
+                        InputStreamReader streamReader = new InputStreamReader(connection.getInputStream());
+
+                        //Create a new buffered reader and String Builder
+                        BufferedReader reader = new BufferedReader(streamReader);
+                        StringBuilder stringBuilder = new StringBuilder();
+
+                        //Check if the line we are reading is not null
+                        while((inputLine = reader.readLine()) != null){
+                            stringBuilder.append(inputLine);
+                        }
+
+                        //Close our InputStream and Buffered reader
+                        reader.close();
+                        streamReader.close();
+
+                        foundIP = true;
+
+                    } catch (IOException IO){
+
+                    }
+
+                    if (foundIP){
+                        SharedPreferences sharedPreferences = getSharedPreferences("StoredValues", MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString("lastIPNum", Integer.toString(ipNumber));
+                        editor.apply();
+
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "Successfully found server IP Address", Toast.LENGTH_LONG).show();
+                            }
+                        });
+
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
     //endregion
 
     //sets the wifi symbol
@@ -427,11 +491,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //searches through IP addresses until it finds server
-    public void CycleIP(){
-
-    }
-
     //region Status functions
 
     //gets, parses, and uses retrieved statuses
@@ -476,12 +535,6 @@ public class MainActivity extends AppCompatActivity {
                     final User[] userArray = gson.fromJson(stringBuilder.toString(), User[].class);
 
                     if (roommateUserID == 0) { //throw exception if no roommate status
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                //Toast.makeText(getApplicationContext(), "First server attempt failed", Toast.LENGTH_SHORT).show();
-                            }
-                        });
                         throw new IOException("Didn't retrieve information from server");
                     }
 
