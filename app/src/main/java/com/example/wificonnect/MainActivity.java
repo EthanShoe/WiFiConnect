@@ -31,21 +31,15 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -64,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
     int roommateUserID;
     boolean autoOpenChecked;
     boolean autoReconnectChecked;
-    User[] userArray;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,64 +110,9 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             try{
-                                /*URL url = new URL(IPAddress + "api/users/" + currentUserID + "/");
-                                HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
-                                httpCon.setRequestMethod("PUT");
-                                httpCon.setDoOutput(true);
-                                httpCon.connect();
-                                OutputStreamWriter out = new OutputStreamWriter(httpCon.getOutputStream());
-                                String test = String.format("{'status':%s}", selectedStatus);
-                                out.write(test);
-                                out.close();*/
-
-                                URL url = new URL(IPAddress + "api/users/" + currentUserID + "/");
-                                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                                connection.setRequestMethod("PUT");
-                                connection.setDoOutput(true);
-                                connection.setRequestProperty("Content-Type", "application/json");
-                                connection.connect();
-
-                                OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-                                String test = String.format("{'status':%s}", selectedStatus);
-                                out.write(test);
-                                out.flush();
-                                out.close();
-
-                                /*URL url = new URL("http://www.example.com/resource");
-                                HttpClient client = new DefaultHttpClient();
-                                HttpPut put= new HttpPut(url);
-
-                                List<NameValuePair> pairs = new ArrayList<NameValuePair>();
-                                pairs.add(new BasicNameValuePair("key1", "value1"));
-                                pairs.add(new BasicNameValuePair("key2", "value2"));
-                                put.setEntity(new UrlEncodedFormEntity(pairs));
-
-                                HttpResponse response = client.execute(put);*/
-
-
-                                /*OkHttpClient client = new OkHttpClient();
-
-                                RequestBody formBody = new FormBody.Builder()
-                                        .add("message", String.format("{'status':%s}", selectedStatus))
-                                        .build();
-                                Request request = new Request.Builder()
-                                        .url(IPAddress + "api/users/" + currentUserID + "/")
-                                        .post(formBody)
-                                        .build();
-
-                                try {
-                                    Response response = client.newCall(request).execute();
-
-                                    // Do something with the response.
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }*/
-
-                                /*MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-                                String content = String.format("{'status':%s}", selectedStatus);
+                                MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+                                String content = String.format("{\"status\":%s}", selectedStatus);
                                 RequestBody body = RequestBody.create(JSON, content);
-
-                                OkHttpClient client = new OkHttpClient();
 
                                 Request request = new Request.Builder()
                                         .url(IPAddress + "api/users/" + currentUserID + "/")
@@ -182,7 +120,8 @@ public class MainActivity extends AppCompatActivity {
                                         .put(body) //PUT
                                         .build();
 
-                                client.newCall(request).execute();*/
+                                OkHttpClient client = new OkHttpClient();
+                                Response response = client.newCall(request).execute();
 
                             } catch (IOException IO){
 
